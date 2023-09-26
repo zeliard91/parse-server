@@ -50,6 +50,7 @@
     "mongodb": "4.10.0",
     "mustache": "4.2.0",
     "parse": "4.0.1",
+    "parse-server-mailgun-adapter-template": "^1.1.7",
     "path-to-regexp": "0.1.7",
     "pg-monitor": "2.0.0",
     "pg-promise": "11.3.0",
