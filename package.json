@@ -27,6 +27,7 @@
     "@parse/fs-files-adapter": "1.2.2",
     "@parse/push-adapter": "4.1.2",
     "@parse/s3-files-adapter": "^2.0.2",
+    "axios": "^1.5.1",
     "bcryptjs": "2.4.3",
     "body-parser": "1.20.1",
     "commander": "5.1.0",
