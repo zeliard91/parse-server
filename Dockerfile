@@ -30,6 +30,9 @@ VOLUME /parse-server/cloud /parse-server/config
 
 WORKDIR /parse-server
 
+# Install PM2 globalement
+RUN npm install -g pm2
+
 # Copy build stage folders
 COPY --from=build /tmp/prod_node_modules /parse-server/node_modules
 COPY --from=build /tmp/lib lib
@@ -38,10 +41,14 @@ COPY package*.json ./
 COPY bin bin
 COPY public_html public_html
 COPY views views
+COPY ecosystem.config.js ./
+
 RUN mkdir -p logs && chown -R node: logs
 
 ENV PORT=1337
 USER node
 EXPOSE $PORT
 
-ENTRYPOINT ["node", "./bin/parse-server"]
+# User pm2-runtime with --raw to redirect logs to stdout/stderr
+ENTRYPOINT ["pm2-runtime"]
+CMD ["start", "ecosystem.config.js", "--raw"]
