@@ -42,6 +42,7 @@ COPY bin bin
 COPY public_html public_html
 COPY views views
 COPY ecosystem.config.js ./
+COPY start-server.js ./
 
 RUN mkdir -p logs && chown -R node: logs
 
@@ -49,6 +50,6 @@ ENV PORT=1337
 USER node
 EXPOSE $PORT
 
-# User pm2-runtime with --raw to redirect logs to stdout/stderr
+# Use pm2-runtime to start the server
 ENTRYPOINT ["pm2-runtime"]
-CMD ["start", "ecosystem.config.js", "--raw"]
+CMD ["start", "ecosystem.config.js"]
