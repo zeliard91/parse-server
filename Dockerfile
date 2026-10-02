@@ -1,7 +1,8 @@
 ############################################################
 # Build stage
 ############################################################
-FROM node:lts-alpine AS build
+# Pinned on purpose: node:lts-alpine silently changed the runtime between builds
+FROM node:24.21.0-alpine AS build
 
 RUN apk --no-cache add git
 WORKDIR /tmp
@@ -24,11 +25,15 @@ RUN npm ci --omit=dev --ignore-scripts \
 ############################################################
 # Release stage
 ############################################################
-FROM node:lts-alpine AS release
+FROM node:24.21.0-alpine AS release
 
 VOLUME /parse-server/cloud /parse-server/config
 
 WORKDIR /parse-server
+
+# Bundled so that "nodemon" starts without npx downloading it at each container
+# start (needs network, unpinned version, and an extra npm process in memory)
+RUN npm install -g nodemon@3.1.14 && npm cache clean --force
 
 # Copy build stage folders
 COPY --from=build /tmp/prod_node_modules /parse-server/node_modules
@@ -43,5 +48,8 @@ RUN mkdir -p logs && chown -R node: logs
 ENV PORT=1337
 USER node
 EXPOSE $PORT
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD ["node", "./bin/healthcheck.js"]
 
 ENTRYPOINT ["node", "./bin/parse-server"]

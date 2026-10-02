@@ -6,6 +6,7 @@ import rest from '../rest';
 import Parse from 'parse/node';
 import AccountLockout from '../AccountLockout';
 import Config from '../Config';
+import logger from '../logger';
 
 var RestQuery = require('../RestQuery');
 var Auth = require('../Auth');
@@ -137,21 +138,28 @@ export class UserController extends AdaptableController {
     }
     const token = encodeURIComponent(user._email_verify_token);
     // We may need to fetch the user in case of update email
-    this.getUserIfNeeded(user).then(user => {
-      const username = encodeURIComponent(user.username);
+    this.getUserIfNeeded(user)
+      .then(user => {
+        const username = encodeURIComponent(user.username);
 
-      const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
-      const options = {
-        appName: this.config.appName,
-        link: link,
-        user: inflate('_User', user),
-      };
-      if (this.adapter.sendVerificationEmail) {
-        this.adapter.sendVerificationEmail(options);
-      } else {
-        this.adapter.sendMail(this.defaultVerificationEmail(options));
-      }
-    });
+        const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
+        const options = {
+          appName: this.config.appName,
+          link: link,
+          user: inflate('_User', user),
+        };
+        sendMailSafely(() => {
+          if (this.adapter.sendVerificationEmail) {
+            return this.adapter.sendVerificationEmail(options);
+          }
+          return this.adapter.sendMail(this.defaultVerificationEmail(options));
+        }, 'verification');
+      })
+      .catch(error => {
+        logger.error(`Unable to send verification email: ${(error && error.message) || error}`, {
+          error,
+        });
+      });
   }
 
   /**
@@ -252,11 +260,12 @@ export class UserController extends AdaptableController {
       user: inflate('_User', user),
     };
 
-    if (this.adapter.sendPasswordResetEmail) {
-      this.adapter.sendPasswordResetEmail(options);
-    } else {
-      this.adapter.sendMail(this.defaultResetPasswordEmail(options));
-    }
+    sendMailSafely(() => {
+      if (this.adapter.sendPasswordResetEmail) {
+        return this.adapter.sendPasswordResetEmail(options);
+      }
+      return this.adapter.sendMail(this.defaultResetPasswordEmail(options));
+    }, 'password reset');
 
     return Promise.resolve(user);
   }
@@ -323,6 +332,17 @@ function updateUserPassword(user, password, config) {
       }
     )
     .then(() => user);
+}
+
+// Mail adapters are called fire-and-forget: a provider failure (invalid API key,
+// rejected recipient...) must be logged, not left as an unhandled rejection that
+// would terminate the process.
+function sendMailSafely(send, kind) {
+  Promise.resolve()
+    .then(send)
+    .catch(error => {
+      logger.error(`Unable to send ${kind} email: ${(error && error.message) || error}`, { error });
+    });
 }
 
 function buildEmailLink(destination, username, token, config) {
