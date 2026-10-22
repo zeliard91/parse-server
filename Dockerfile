@@ -2,7 +2,7 @@
 # Build stage
 ############################################################
 # Pinned on purpose: node:lts-alpine silently changed the runtime between builds
-FROM node:24.21.0-alpine AS build
+FROM node:24.22.1-alpine AS build
 
 RUN apk --no-cache add git
 WORKDIR /tmp
@@ -25,7 +25,7 @@ RUN npm ci --omit=dev --ignore-scripts \
 ############################################################
 # Release stage
 ############################################################
-FROM node:24.21.0-alpine AS release
+FROM node:24.22.1-alpine AS release
 
 VOLUME /parse-server/cloud /parse-server/config
 
