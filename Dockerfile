@@ -56,6 +56,10 @@ ENV PORT=1337
 # with the master key or from 127.0.0.1 are not limited. "/login(.*)" also matches GET
 # /login?username=...&password=..., which a plain "/login" path does not.
 ENV PARSE_SERVER_RATE_LIMIT='[{"requestPath":"/login(.*)","requestTimeWindow":900000,"requestCount":10},{"requestPath":"/users","requestMethods":["POST"],"requestTimeWindow":900000,"requestCount":10},{"requestPath":"/requestPasswordReset","requestTimeWindow":900000,"requestCount":5},{"requestPath":"/verificationEmailRequest","requestTimeWindow":900000,"requestCount":5}]'
+# Take the client IP from X-Forwarded-For only when the request comes through a
+# loopback or private address (reverse proxy, docker-proxy); without it, every client
+# behind the proxy shares one IP and one rate limit counter
+ENV PARSE_SERVER_TRUST_PROXY='["loopback","uniquelocal"]'
 # Sessions last 90 days instead of 1 year; an active session is extended once half
 # of that time has passed (so expiry happens after 45 to 90 days of inactivity)
 ENV PARSE_SERVER_SESSION_LENGTH=7776000 \
