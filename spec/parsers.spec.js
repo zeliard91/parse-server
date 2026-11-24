@@ -69,6 +69,13 @@ describe('parsers', () => {
     expect(parser([1, 2, 3])).toEqual([1, 2, 3]);
     expect(parser('{"hello": "world"}')).toEqual(['{"hello": "world"}']);
     expect(parser('1,2,3')).toEqual(['1', '2', '3']);
+    expect(parser('[{"requestPath": "/login", "requestCount": 10}]')).toEqual([
+      { requestPath: '/login', requestCount: 10 },
+    ]);
+    expect(parser(' ["a", "b"]')).toEqual(['a', 'b']);
+    expect(() => {
+      parser('[invalid');
+    }).toThrow();
     expect(() => {
       parser(1);
     }).toThrow();

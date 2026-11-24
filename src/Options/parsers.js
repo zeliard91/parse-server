@@ -43,6 +43,11 @@ function arrayParser(opt) {
   if (Array.isArray(opt)) {
     return opt;
   } else if (typeof opt === 'string') {
+    // A JSON array allows array options made of objects (e.g. rateLimit) to be set
+    // through environment variables; other strings stay comma separated.
+    if (opt.trim().startsWith('[')) {
+      return JSON.parse(opt);
+    }
     return opt.split(',');
   } else {
     throw new Error(`${opt} should be a comma separated string or an array`);
