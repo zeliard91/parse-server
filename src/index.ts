@@ -11,7 +11,6 @@ import { useExternal } from './deprecated';
 import { getLogger } from './logger';
 import { PushWorker } from './Push/PushWorker';
 import { ParseServerOptions } from './Options';
-import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 
 // Factory function
 const _ParseServer = function (options: ParseServerOptions) {
@@ -29,6 +28,12 @@ Object.defineProperty(module.exports, 'logger', {
   get: getLogger,
 });
 
+// Loaded on first access: the GraphQL dependencies are not installed in the Docker image
+Object.defineProperty(module.exports, 'ParseGraphQLServer', {
+  enumerable: true,
+  get: () => require('./GraphQL/ParseGraphQLServer').ParseGraphQLServer,
+});
+
 export default ParseServer;
 export {
   S3Adapter,
@@ -40,7 +45,6 @@ export {
   LRUCacheAdapter,
   TestUtils,
   PushWorker,
-  ParseGraphQLServer,
   _ParseServer as ParseServer,
   SchemaMigrations,
   AuthAdapter,

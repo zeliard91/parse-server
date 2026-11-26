@@ -2,7 +2,7 @@
 # Build stage
 ############################################################
 # Pinned on purpose: node:lts-alpine silently changed the runtime between builds
-FROM node:24.22.1-alpine AS build
+FROM node:24.22.3-alpine AS build
 
 RUN apk --no-cache add \
    build-base \
@@ -29,7 +29,10 @@ RUN npm ci --omit=dev --ignore-scripts \
 ############################################################
 # Release stage
 ############################################################
-FROM node:24.22.1-alpine AS release
+FROM node:24.22.3-alpine AS release
+
+# Apply Alpine security fixes (openssl, zlib...) published after the base image
+RUN apk upgrade --no-cache
 
 VOLUME /parse-server/cloud /parse-server/config
 
@@ -64,6 +67,9 @@ ENV PARSE_SERVER_TRUST_PROXY='["loopback","uniquelocal"]'
 # of that time has passed (so expiry happens after 45 to 90 days of inactivity)
 ENV PARSE_SERVER_SESSION_LENGTH=7776000 \
     PARSE_SERVER_EXTEND_SESSION_ON_USE=true
+# GraphQL API and playground are not used: keep them unmounted
+ENV PARSE_SERVER_MOUNT_GRAPHQL=false \
+    PARSE_SERVER_MOUNT_PLAYGROUND=false
 USER node
 EXPOSE $PORT
 

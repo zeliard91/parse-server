@@ -4,7 +4,6 @@ var batch = require('./batch'),
   express = require('express'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
-  { parse } = require('graphql'),
   path = require('path'),
   fs = require('fs');
 
@@ -40,7 +39,6 @@ import { AudiencesRouter } from './Routers/AudiencesRouter';
 import { AggregateRouter } from './Routers/AggregateRouter';
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
-import { ParseGraphQLServer } from './GraphQL/ParseGraphQLServer';
 import { SecurityRouter } from './Routers/SecurityRouter';
 import CheckRunner from './Security/CheckRunner';
 import Deprecator from './Deprecator/Deprecator';
@@ -53,6 +51,26 @@ addParseCloud();
 
 // Track connections to destroy them on shutdown
 const connections = new Connections();
+
+/**
+ * Loads the GraphQL API only when it is mounted: its dependencies are dev dependencies
+ * of this build, so they are not installed in the production Docker image.
+ */
+function loadGraphQL() {
+  try {
+    return {
+      parse: require('graphql').parse,
+      ParseGraphQLServer: require('./GraphQL/ParseGraphQLServer').ParseGraphQLServer,
+    };
+  } catch (e) {
+    if (e.code === 'MODULE_NOT_FOUND') {
+      throw new Error(
+        `GraphQL is not available in this build, install its dependencies to use mountGraphQL or mountPlayground (${e.message})`
+      );
+    }
+    throw e;
+  }
+}
 
 // ParseServer works like a constructor of an express app.
 // https://parseplatform.org/parse-server/api/master/ParseServerOptions.html
@@ -441,6 +459,7 @@ class ParseServer {
     app.use(options.mountPath, this.app);
 
     if (options.mountGraphQL === true || options.mountPlayground === true) {
+      const { parse, ParseGraphQLServer } = loadGraphQL();
       let graphQLCustomTypeDefs = undefined;
       if (typeof options.graphQLSchema === 'string') {
         graphQLCustomTypeDefs = parse(fs.readFileSync(options.graphQLSchema, 'utf8'));
