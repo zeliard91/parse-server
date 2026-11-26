@@ -48,6 +48,8 @@ COPY --from=build /tmp/lib lib
 
 COPY package*.json ./
 COPY bin bin
+# Local packages linked from node_modules (Mailgun email adapter)
+COPY packages packages
 COPY public_html public_html
 COPY views views
 RUN mkdir -p logs && chown -R node: logs
